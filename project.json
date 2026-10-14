@@ -1,0 +1,7 @@
+{
+  "name": "PHL",
+  "description": "HMI control for Daikin CMIMIR / Intelligent Manager HVAC board - ESP32-S3 HMI + Node-RED, driving STM8S207 industrial I/O from Linux.",
+  "author": "Nadeem <zahid_printers@yahoo.com>",
+  "license": "MIT",
+  "created": "2026-10-14"
+}
