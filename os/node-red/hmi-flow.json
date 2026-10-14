@@ -1,0 +1,131 @@
+[
+    {
+        "id": "tab1",
+        "type": "tab",
+        "label": "HMI v1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "inj_state",
+        "type": "inject",
+        "z": "tab1",
+        "name": "tick 1s",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "repeat": "1",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "fn_state"
+            ]
+        ]
+    },
+    {
+        "id": "fn_state",
+        "type": "function",
+        "z": "tab1",
+        "name": "build state",
+        "func": "var t = new Date();\nfunction p2(n) { return (n < 10 ? '0' : '') + n; }\nvar chs = function (n, f) { var a = []; for (var i = 1; i <= n; i++) { a.push(f(i)); } return a; };\n// old function-node sandbox has no `process` - track start time in flow ctx\nvar t0 = flow.get('t0');\nif (!t0) { t0 = Date.now(); flow.set('t0', t0); }\n// v1 state = placeholder data. Real ECU/Modbus values replace fields in\n// place later; keep this JSON shape stable - the SPA binds to it.\nflow.set('hmiState', {\n    time: p2(t.getHours()) + ':' + p2(t.getMinutes()) + ':' + p2(t.getSeconds()),\n    date: t.getFullYear() + '-' + p2(t.getMonth() + 1) + '-' + p2(t.getDate()),\n    uptime_s: Math.floor((Date.now() - t0) / 1000),\n    mode: 'AUTO',\n    role: 'engineer',\n    lang: 'en',\n    alarm: { active: false, count: 0, text: 'No alarms' },\n    hmi: { ip: '192.168.100.127', version: '1.0.0' },\n    modbus: { port: '/dev/ttyS1', baud: 9600, parity: 'none', unit_id: 1, poll_ms: 1000, connected: false },\n    devices: [\n        { id: 1, name: 'Indoor Unit 1', type: 'IDU', status: 'offline' },\n        { id: 2, name: 'Outdoor Unit 1', type: 'ODU', status: 'offline' }\n    ],\n    io: {\n        din: chs(8, function (c) { return { ch: c, name: 'DI' + c, on: false }; }),\n        dout: chs(8, function (c) { return { ch: c, name: 'DO' + c, on: false, manual: false }; }),\n        ain: chs(4, function (c) { return { ch: c, name: 'AI' + c, raw: 0, eng: 0, unit: 'C', scale: { raw_lo: 0, raw_hi: 4095, eng_lo: 0, eng_hi: 50, dec: 1 } }; }),\n        aout: chs(2, function (c) { return { ch: c, name: 'AO' + c, raw: 0, eng: 0, unit: '%', setpoint: 0 }; })\n    },\n    raw: { regs: chs(16, function (i) { return { addr: i - 1, val: 0 }; }), polls: 0, errors: 0 },\n    locked: true\n});\nreturn null;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 350,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "http_state",
+        "type": "http in",
+        "z": "tab1",
+        "name": "GET /api/state",
+        "url": "/api/state",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "fn_state_get"
+            ]
+        ]
+    },
+    {
+        "id": "fn_state_get",
+        "type": "function",
+        "z": "tab1",
+        "name": "reply state",
+        "func": "var s = flow.get('hmiState');\nif (!s) {\n    msg.statusCode = 503;\n    msg.payload = { error: 'state not built yet' };\n} else {\n    msg.payload = s;\n}\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 370,
+        "y": 200,
+        "wires": [
+            [
+                "http_state_resp"
+            ]
+        ]
+    },
+    {
+        "id": "http_state_resp",
+        "type": "http response",
+        "z": "tab1",
+        "name": "",
+        "statusCode": "200",
+        "headers": {},
+        "x": 590,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "http_cmd",
+        "type": "http in",
+        "z": "tab1",
+        "name": "POST /api/cmd",
+        "url": "/api/cmd",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 300,
+        "wires": [
+            [
+                "fn_cmd"
+            ]
+        ]
+    },
+    {
+        "id": "fn_cmd",
+        "type": "function",
+        "z": "tab1",
+        "name": "commands locked (stub)",
+        "func": "// v1: every control on the screen is grey/disabled. When the logic\n// workflow is ready, replace this stub with real wiring and flip\n// state.locked to false in \"build state\".\nnode.warn('cmd blocked (locked): ' + JSON.stringify(msg.payload));\nmsg.payload = { ok: false, error: 'locked', detail: 'commands not implemented yet' };\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 390,
+        "y": 300,
+        "wires": [
+            [
+                "http_cmd_resp"
+            ]
+        ]
+    },
+    {
+        "id": "http_cmd_resp",
+        "type": "http response",
+        "z": "tab1",
+        "name": "",
+        "statusCode": "200",
+        "headers": {},
+        "x": 620,
+        "y": 300,
+        "wires": []
+    }
+]

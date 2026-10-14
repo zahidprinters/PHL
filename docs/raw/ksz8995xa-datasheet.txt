@@ -1,0 +1,80 @@
+# KSZ8995XA — datasheet extract (why the switch has an EEPROM at all)
+
+Source: Micrel (now Microchip) **KS8995XA — Integrated 5-Port 10/100 QoS
+Switch**, Rev 2.6, September 2008, `M9999-091508`. The exact part legible on
+this board (`MICREL / KSZ8995XA / 1249M2 / M9242030 / MO2062U0`).
+
+Full datasheet: https://ww1.microchip.com/downloads/en/DeviceDoc/00002481B.pdf
+Text mirror used for these extracts: https://www.rlocman.ru/datasheet/pdf.html?di=135251
+
+> These are quotations, not measurements. Nothing here was read off the board.
+
+---
+
+## 1. What the chip is (General Description)
+
+> "The KS8995XA is a highly integrated Layer-2 quality of service (QoS) switch
+> with optimized bill of materials (BOM) cost for low port count, cost-sensitive
+> 10/100Mbps switch systems. … The KS8995XA contains five 10/100 transceivers
+> with patented mixed-signal low-power technology, five media access control
+> (MAC) units, a high-speed non-blocking switch fabric, a dedicated address
+> lookup engine, and an on-chip frame buffer memory."
+
+**Five MAC+PHY pairs on one die.** That is the whole point for this board: two
+RJ45 jacks hanging off one uplink is exactly what a 5-port switch is for.
+
+## 2. It reads an external EEPROM by itself, at power-up
+
+Table of contents, verbatim:
+
+> "Advanced Functionality. 26
+> QoS Support . 26
+> Rate Limit Support . 28
+> **Configuration Interface. 29
+> I2C Master Serial Bus Configuration . 29
+> MII Management Interface (MIIM) . 29**"
+
+**Register 1 (0x01): Chip ID1/Start Switch**, field `0 Start switch`, verbatim:
+
+> "The chip starts automatically after trying to read the external EEPROM. If
+> EEPROM does not exist, the chip will use default values for all internal
+> registers. If EEPROM is present, the contents in the EEPROM will be checked.
+> The switch will check: (1) Register 0 = 0x95, (2) Register 1 [7:4] = 0x0. If
+> this check is OK, the contents in the EEPROM will override chip register
+> default values."
+
+So the flow is: reset released → chip tries the EEPROM itself → validates a
+signature (`Reg0 = 0x95`, `Reg1[7:4] = 0x0`) → overrides its defaults → starts.
+**No host, no driver, no bus enumeration.** Exactly the mechanism already proven
+for 93LC66A #1 and the LAN9512, and the reason such an EEPROM never appears on
+any Linux-visible bus.
+
+## 3. The bus it uses is I²C (2-wire), and it has an MIIM option
+
+Two configuration buses exist, per the contents above: **"I2C Master Serial Bus
+Configuration"** and **"MII Management Interface (MIIM)"**. The pins are
+multiplexed for exactly these roles — from the pin table:
+
+| Pin | Name | Role |
+|---|---|---|
+| 110 | `SCL` | I²C clock — the EEPROM/config clock |
+| 111 | `SDA` | I²C data |
+| 107 | `MDC` | MIIM management data clock |
+| 108 | `MDIO` | MIIM management data I/O |
+
+## 4. Why this does **not** prove 93LC66A #2 belongs to the switch
+
+The configuration interface documented above is **I²C — 2 wires (`SCL`/`SDA`)**.
+A **93LC66A is a 3-wire Microwire** part (`CS`/`SK`/`DI`/`DO`), a different bus
+and a different part family. So:
+
+- ✅ A 5-port switch is present, and it is the only chip that explains two
+  RJ45 jacks on a single `eth0`.
+- ✅ This family loads its config from an external EEPROM at power-up, over its
+  own pins, invisible to Linux.
+- ❌ **The datasheet does not name 93C46/93C56/93C66 anywhere in the config
+  interface** — it names I²C and MIIM only.
+
+**Conclusion stays honest:** the KSZ8995XA is the *leading candidate* owner for
+#2, on proximity and on the mechanism, but it is **not confirmed**. The deciding
+test is unchanged — a live cable in **RJ45 #2** watched against `ethtool eth0`.

@@ -1,0 +1,6 @@
+# SSH from this PC to the board. Every tools/board_*.py probe needs it.
+paramiko
+
+# Serial access, used by the python2 tools that run ON the board
+# (uart_sniff.py, uart_tap.py, uart_console.py).
+pyserial==3.5

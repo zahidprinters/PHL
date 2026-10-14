@@ -1,0 +1,8 @@
+# HMI appliance X session (openbox 3.5 autostart = plain shell).
+# No panel, menu, wallpaper, or bars. VNC server + kiosk browser on the
+# Node-RED dashboard (installed 2026-10-13, replaces EMA_Controls.sh which
+# now needs a manual launch over VNC: /root/Desktop/EMA_Controls.sh).
+# FF 52 has no --kiosk flag; the borderless fullscreen is forced by the
+# openbox window rule in /root/.config/openbox/rc.xml (class Firefox).
+/usr/lib/vino/vino-server &
+firefox http://localhost:1880/ui &

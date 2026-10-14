@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECU-30 HMI</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<!-- icon sprite: no external fonts/icons - board may be offline -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 2 12h3v8h5v-6h4v6h5v-8h3z"/></symbol>
+  <symbol id="i-io" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path fill="currentColor" d="M13 2 6 12h4v10h4V12h4z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><path fill="currentColor" d="m12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8m9 4-2 1 1 2-2 2-2-1-1 2h-3l-1-2-2 1-2-2 1-2-2-1V9l2-1-1-2 2-2 2 1 1-2h3l1 2 2-1 2 2-1 2 2 1z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m-1 5h2v2h-2zm0 4h2v6h-2z"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path fill="currentColor" d="M2 12c3-6 5 6 8 0s5 6 8 0 3 0 4-2v10H2z"/></symbol>
+</svg>
+
+<header id="topbar">
+  <div class="brand">DAIKIN<span>ECU-30</span></div>
+  <div class="clock">
+    <b id="t-time">--:--:--</b>
+    <span id="t-date">----&#8209;--&#8209;--</span>
+  </div>
+  <div class="chips">
+    <span class="chip" id="t-mode">--</span>
+    <span class="chip ok" id="t-link">LINK OK</span>
+  </div>
+  <div class="alarm" id="t-alarm">No alarms</div>
+</header>
+
+<div id="shell">
+  <nav id="tabs">
+    <button class="tab active" data-goto="home"><svg><use href="#i-home"/></svg><i>Home</i></button>
+    <button class="tab" data-goto="io"><svg><use href="#i-io"/></svg><i>I/O</i></button>
+    <button class="tab" data-goto="manual"><svg><use href="#i-hand"/></svg><i>Manual</i></button>
+    <button class="tab" data-goto="settings"><svg><use href="#i-gear"/></svg><i>Settings</i></button>
+    <button class="tab" data-goto="info"><svg><use href="#i-info"/></svg><i>Info</i></button>
+    <button class="tab" data-goto="raw"><svg><use href="#i-wave"/></svg><i>Raw</i></button>
+  </nav>
+
+  <main id="content">
+    <!-- ================= HOME ================= -->
+    <section class="page active" data-page="home">
+      <div class="grid g4">
+        <div class="card big">
+          <div class="card-t">Mode</div>
+          <div class="val" id="h-mode">AUTO</div>
+        </div>
+        <div class="card big">
+          <div class="card-t">Setpoint</div>
+          <div class="val">--.-<em>&deg;C</em></div>
+        </div>
+        <div class="card big">
+          <div class="card-t">Room temp</div>
+          <div class="val">--.-<em>&deg;C</em></div>
+        </div>
+        <div class="card big">
+          <div class="card-t">Outdoor temp</div>
+          <div class="val">--.-<em>&deg;C</em></div>
+        </div>
+      </div>
+      <div class="grid g2">
+        <div class="card">
+          <div class="card-t">System</div>
+          <dl class="kv">
+            <dt>Compressor</dt><dd class="off">OFF</dd>
+            <dt>Fan</dt><dd class="off">OFF</dd>
+            <dt>Heat / Cool</dt><dd class="off">--</dd>
+            <dt>Uptime</dt><dd id="h-uptime">--</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <div class="card-t">Units</div>
+          <ul class="units" id="h-units"></ul>
+        </div>
+      </div>
+    </section>
+    <!-- ================= I/O ================= -->
+    <section class="page" data-page="io">
+      <div class="card">
+        <div class="card-t">Digital inputs</div>
+        <div class="leds" id="io-din"></div>
+      </div>
+      <div class="card">
+        <div class="card-t">Digital outputs <span class="hint">(read&#8209;only v1)</span></div>
+        <div class="leds" id="io-dout"></div>
+      </div>
+      <div class="card">
+        <div class="card-t">Analog inputs</div>
+        <table class="tbl" id="io-ain"><thead>
+          <tr><th>Ch</th><th>Name</th><th>Raw</th><th>Eng</th><th>Unit</th><th>Scaling raw&#8594;eng</th></tr>
+        </thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-t">Analog outputs <span class="hint">(read&#8209;only v1)</span></div>
+        <table class="tbl" id="io-aout"><thead>
+          <tr><th>Ch</th><th>Name</th><th>Raw</th><th>Eng</th><th>Unit</th><th>Setpoint</th></tr>
+        </thead><tbody></tbody></table>
+      </div>
+    </section>
+
+    <!-- ================= MANUAL ================= -->
+    <section class="page" data-page="manual">
+      <div class="card">
+        <div class="card-t">Manual mode <span class="hint">(enable when interlocks exist)</span></div>
+        <label class="switch locked-row"><input type="checkbox" id="m-manual" disabled>
+          <span class="slider"></span><b>Manual override</b></label>
+      </div>
+      <div class="card">
+        <div class="card-t">Digital outputs &#8212; manual control</div>
+        <div class="toggles" id="m-dout"></div>
+      </div>
+      <div class="card">
+        <div class="card-t">Analog outputs &#8212; manual control</div>
+        <div class="sliders" id="m-aout"></div>
+      </div>
+    </section>
+
+    <!-- ================= SETTINGS ================= -->
+    <section class="page" data-page="settings">
+      <div class="card">
+        <div class="card-t">HMI settings</div>
+        <dl class="form">
+          <dt><label for="st-lang">Language</label></dt>
+          <dd><select id="st-lang" disabled><option>English</option></select></dd>
+          <dt><label for="st-role">Access role</label></dt>
+          <dd><select id="st-role" disabled><option>Engineer</option><option>Installer</option></select></dd>
+          <dt><label for="st-units">Temperature units</label></dt>
+          <dd><select id="st-units" disabled><option>&deg;C</option><option>&deg;F</option></select></dd>
+          <dt><label for="st-theme">Theme</label></dt>
+          <dd><select id="st-theme" disabled><option>Light</option><option>Dark</option></select></dd>
+          <dt><label for="st-poll">Refresh (ms)</label></dt>
+          <dd><input id="st-poll" type="number" value="1000" disabled></dd>
+        </dl>
+        <button class="btn" id="st-apply" disabled>Apply</button>
+      </div>
+      <div class="card">
+        <div class="card-t">Security</div>
+        <dl class="form">
+          <dt><label for="st-pin">Installer PIN</label></dt>
+          <dd><input id="st-pin" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;" disabled></dd>
+        </dl>
+        <button class="btn" disabled>Change PIN</button>
+      </div>
+    </section>
+
+    <!-- ================= INFO ================= -->
+    <section class="page" data-page="info">
+      <div class="grid g2">
+        <div class="card">
+          <div class="card-t">HMI / Network</div>
+          <dl class="kv">
+            <dt>IP address</dt><dd id="if-ip">--</dd>
+            <dt>HTTP port</dt><dd>1880</dd>
+            <dt>HMI version</dt><dd id="if-ver">--</dd>
+            <dt>Node&#8209;RED</dt><dd>backend @ :1880</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <div class="card-t">Modbus RTU <span class="hint">(read&#8209;only)</span></div>
+          <dl class="kv">
+            <dt>Port</dt><dd id="if-mb-port">--</dd>
+            <dt>Baud / parity</dt><dd id="if-mb-line">--</dd>
+            <dt>Unit ID</dt><dd id="if-mb-uid">--</dd>
+            <dt>Poll</dt><dd id="if-mb-poll">--</dd>
+            <dt>Link</dt><dd id="if-mb-link">--</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-t">Attached devices</div>
+        <table class="tbl" id="if-dev"><thead>
+          <tr><th>ID</th><th>Name</th><th>Type</th><th>Status</th></tr>
+        </thead><tbody></tbody></table>
+      </div>
+    </section>
+
+    <!-- ================= RAW ================= -->
+    <section class="page" data-page="raw">
+      <div class="grid g2">
+        <div class="card">
+          <div class="card-t">Raw registers <span class="hint" id="rw-polled"></span></div>
+          <table class="tbl mono" id="rw-regs"><thead>
+            <tr><th>Addr</th><th>0x</th><th>Dec</th><th>Bin</th></tr>
+          </thead><tbody></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-t">Analog scaling <span class="hint">(marking 0&#8230;4095)</span></div>
+          <table class="tbl" id="rw-scale"><thead>
+            <tr><th>Ch</th><th>Raw</th><th>Raw lo</th><th>Raw hi</th><th>Eng lo</th><th>Eng hi</th><th>Dec</th><th>Eng</th></tr>
+          </thead><tbody></tbody></table>
+          <p class="note">Scaling table is display&#8209;only in v1. Editing unlocks when
+          the calibration workflow lands.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer id="statusbar">
+  <span>ECU&#8209;30 HMI v1.0.0</span>
+  <span id="s-age">data age: --</span>
+  <span class="lock-badge">CONTROLS LOCKED</span>
+</footer>
+<div id="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
