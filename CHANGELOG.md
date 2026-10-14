@@ -2,6 +2,24 @@
 
 Newest at top. One entry per completed task.
 
+## 2026-10-14 (3) — Git compatible + published to GitHub
+
+Repo made push-ready and the production baseline published to a real remote.
+
+- **Added `LICENSE`** — MIT, canonical author `Nadeem`, year 2026.
+- **Added `project.json`** — name `PHL`, description, author, license, created date.
+- **Remote `origin`** — `https://github.com/zahidprinters/PHL.git`.
+- **Pushed** branch `main`; local now tracks `origin/main`, fully in sync.
+- Commits: `2de1f08` (production baseline, 150 files) + `8ae2715` (LICENSE + project.json).
+
+Why: a repo needs a LICENSE and metadata before its first public push;
+workflow rule "Every new project needs a LICENSE before its first push".
+
+Tested: `git push -u origin main` → `* [new branch] main -> main`,
+exit 0; `git status -sb` → `## main...origin/main` (in sync).
+Not tested: GitHub auth is HTTPS credential-manager cached; a fresh clone
+from another machine will need that account's credentials.
+
 ## 2026-10-14 (2) — Production tone: dev phase closed, reference set frozen, git baseline rebuilt
 
 Development phase ends; from now on only the **screen (SPA) and Node-RED**
