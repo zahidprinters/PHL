@@ -120,6 +120,7 @@
 
     <!-- ================= SETTINGS ================= -->
     <section class="page" data-page="settings">
+      <div class="grid">
       <div class="card">
         <div class="card-t">HMI settings</div>
         <dl class="form">
@@ -137,12 +138,31 @@
         <button class="btn" id="st-apply" disabled>Apply</button>
       </div>
       <div class="card">
+        <div class="card-t">Display</div>
+        <dl class="form">
+          <dt><label for="st-blank">Screen blank</label></dt>
+          <dd>
+            <select id="st-blank">
+              <option value="0">Always on</option>
+              <option value="30">After 30 s</option>
+              <option value="60">After 1 min</option>
+              <option value="120">After 2 min</option>
+              <option value="300">After 5 min</option>
+              <option value="600">After 10 min</option>
+            </select>
+          </dd>
+        </dl>
+        <p class="note">Blanks the screen black after the set idle time; touch
+        anywhere to wake. Saved on this panel.</p>
+      </div>
+      <div class="card">
         <div class="card-t">Security</div>
         <dl class="form">
           <dt><label for="st-pin">Installer PIN</label></dt>
           <dd><input id="st-pin" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;" disabled></dd>
         </dl>
         <button class="btn" disabled>Change PIN</button>
+      </div>
       </div>
     </section>
 
@@ -205,6 +225,8 @@
   <span id="s-age">data age: --</span>
   <span class="lock-badge">CONTROLS LOCKED</span>
 </footer>
+<!-- full-screen idle blank overlay; shown by app.js after the Screen-blank timeout -->
+<div id="blanker"></div>
 <div id="toast" hidden></div>
 <script src="app.js"></script>
 </body>

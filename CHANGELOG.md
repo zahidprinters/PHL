@@ -2,6 +2,47 @@
 
 Newest at top. One entry per completed task.
 
+## 2026-10-14 (5) — Board production folder + agent config bundle
+
+Turned the board into a clean, self-contained project home for continued work.
+
+- **Board `/data/phl` re-created from a fresh clone** of `origin/main` (GitHub),
+  replacing the CRLF-corrupted working tree left by the earlier Windows tar
+  transfer. Production move: GitHub is the single canonical source; the board
+  is a clean checkout, not a hand-copied tree.
+- Ships the **`.cline/` agent config** (global `rules/`, `templates/`,
+  `tools/`, `skills/`, `plugins/`) into the project so Cline runs fully on the
+  board when SSH'd into `/data/phl`. `~/.cline/data/` telemetry (90 MB) is
+  intentionally excluded.
+- HMI Settings page switched to **multi-column layout** (`index.html`: the
+  HMI/Display/Security cards wrapped in `.grid`; reuses the existing
+  responsive grid, no field types changed). Live on the board at
+  `/data/chroot14/data/nodered/static/` (byte-identical, SHA-256 verified).
+- Tested: board `git clone` → clean `git status`, `.cline/` + `vendor-snapshot/`
+  present, LF endings. Windows `git status` clean, pushed to origin/main.
+- Not tested: nothing further pending; visual multi-column already confirmed
+  earlier on hardware. `.cline/machine.md` carries the dev-machine Windows
+  username (`C:\Users\PC`) — flagged on a public repo, scrub if desired.
+
+## 2026-10-14 (4) — HMI Settings: idle screen blank
+
+Added a display blank/sleep control to the HMI Settings page.
+
+- **Settings → Display → "Screen blank"** select: Always on / 30 s / 1 / 2 / 5 / 10 min.
+- Choice persists in `localStorage` (`hmi.blank`, seconds; `0` = never), survives reloads.
+- After the idle timeout with no touch/click/key, a full-screen black overlay
+  (`#blanker`) covers the panel; any input wakes it and restarts the countdown.
+- **Not gated by the controls lock** — it is a local display preference, not a
+  hardware command, so it stays active while hardware controls are locked.
+  No backend call; purely a CSS overlay in `static/`.
+- Ceiling: this is a *software* blank (black overlay), not real backlight
+  power-off. True DPMS/backlight-off is the upgrade path (`xset dpms` / board
+  backlight API behind `/api/cmd`) once the logic workflow unlocks commands.
+- Tested: `node tests/blank_check.js` → 13 passed, 0 failed (real `app.js`
+  driven through `vm` with a fake clock + DOM/localStorage shim).
+  `node --check os/node-red/static/app.js` → OK.
+- Not tested: visual blank/wake on the physical 1024x600 panel (needs board).
+
 ## 2026-10-14 (3) — Git compatible + published to GitHub
 
 Repo made push-ready and the production baseline published to a real remote.

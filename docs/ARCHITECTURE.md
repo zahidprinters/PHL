@@ -82,6 +82,21 @@ peripheral checklist in `docs/BOARD.md`, worked down row by row.
 | `pyserial` | for the on-board `uart_*` tools | `ModuleNotFoundError: serial` |
 
 ## Decisions
+- **2026-10-14 (5) - HMI screen-blank deployed to board; live path is inside the chroot.**
+  Node-RED now runs in `chroot14`; `httpStatic: '/data/nodered/static/'` resolves
+  (chroot-relative) to **`/data/chroot14/data/nodered/static/`** on the host — NOT
+  `/data/nodered/static/` (the old note's path, which does not exist). Deploy the
+  SPA there. Kiosk = `/etc/xdg/openbox/autostart` line 8 `firefox http://localhost:1880/`
+  as root; **FF cache fully disabled** (`browser.cache.{disk,memory}.enable=false`), so
+  no cache-busting on redeploy. Pre-deploy backup taken as `static.bak-20261014`.
+- **2026-10-14 (4) - HMI screen-blank is frontend-only, on purpose.** The idle
+  blank is a local display preference, not a hardware command, so it lives
+  entirely in `static/` (black `#blanker` overlay) and is deliberately NOT
+  gated by the controls lock — it works in v1 while hardware commands stay
+  locked. Preference persists in `localStorage` (`hmi.blank`, seconds). A real
+  backlight power-off would need `/api/cmd` -> board (DPMS/backlight API), the
+  upgrade path once the logic workflow unlocks commands. Regression guard:
+  `node tests/blank_check.js` (loads real `app.js` via `vm`, fake clock).
 - **2026-10-14 - PRODUCTION TONE: development phase closed.** Everything that
   drives the board's hardware (protocol tools, frame recipes, raw evidence,
   flows, backups) stays as the frozen reference set; dev-phase debris is gone

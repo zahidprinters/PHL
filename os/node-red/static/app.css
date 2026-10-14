@@ -188,6 +188,12 @@ body {
   background: var(--rail); color: #fff; padding: 10px 18px; border-radius: 6px;
   box-shadow: 0 4px 14px rgba(0,0,0,.35); font-size: 14px;
 }
+/* ---------- idle screen blank ---------- */
+#blanker {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: #000; display: none; cursor: none;
+}
+#blanker.on { display: block; }
 .note { color: var(--ink2); font-size: 13px; margin: 10px 0 0; }
 .off { color: var(--ink2); }
 

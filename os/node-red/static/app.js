@@ -189,11 +189,51 @@
     setTimeout(tick, POLL_MS);
   }
 
+  /* ---------- idle screen blank ----------
+   * A display preference, not a hardware command, so it stays active while
+   * controls are locked. Saved to localStorage (idle seconds; 0 = never blank).
+   * Wake on any touch/click/key. No backend call — purely a black overlay. */
+  var BLANK_KEY = "hmi.blank";
+  var blanker = null;
+  var blankTimer = null;
+  function blankSecs() {
+    var v = parseInt(localStorage.getItem(BLANK_KEY), 10);
+    return isNaN(v) ? 0 : v;
+  }
+  function armBlank() {
+    if (blankTimer) { clearTimeout(blankTimer); blankTimer = null; }
+    var secs = blankSecs();
+    if (secs > 0 && blanker) {
+      blankTimer = setTimeout(function () { blanker.classList.add("on"); }, secs * 1000);
+    }
+  }
+  function wake() {
+    if (blanker) { blanker.classList.remove("on"); }
+    armBlank();   /* activity restarts the idle countdown */
+  }
+  function initBlank() {
+    blanker = $("blanker");
+    var sel = $("st-blank");
+    if (sel) {
+      sel.value = String(blankSecs());
+      sel.addEventListener("change", function () {
+        var secs = parseInt(sel.value, 10) || 0;
+        try { localStorage.setItem(BLANK_KEY, String(secs)); } catch (e) { /* private mode */ }
+        wake();
+      });
+    }
+    ["touchstart", "mousedown", "keydown"].forEach(function (ev) {
+      document.addEventListener(ev, wake, true);
+    });
+    armBlank();
+  }
+
   /* go */
+  function start() { tick(); initBlank(); }
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", tick);
+    document.addEventListener("DOMContentLoaded", start);
   } else {
-    tick();
+    start();
   }
 
 })();
